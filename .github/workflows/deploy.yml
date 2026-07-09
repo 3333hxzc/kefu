@@ -14,7 +14,7 @@ jobs:
       - name: Build jar
         run: |
           mkdir -p build
-          cp 苏沫ovo.jar build/app.jar
+          cp 33ovo.jar build/app.jar
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
