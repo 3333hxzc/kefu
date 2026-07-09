@@ -1,0 +1,48 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: kefu-backend
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/kefu2?useSSL=false&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    driver-class-name: com.mysql.jdbc.Driver
+    username: ${DB_USERNAME:kefu2}
+    password: ${DB_PASSWORD:kefu2}
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL57Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  secret: ${JWT_SECRET:xQ7#pZ9&vM2!kL4*sN1@bR3^fT5$gH8%jW6+eY0~dU}
+
+app:
+  public-url: ${APP_PUBLIC_URL:https://hxzc33.cc.cd}
+  frontend-url: ${APP_FRONTEND_URL:https://hxzc33.cc.cd}
+  admin:
+    username: ${APP_ADMIN_USERNAME:hxzc33}
+    password: ${APP_ADMIN_PASSWORD:123456}
+
+tron:
+  receive:
+    address: ${TRON_RECEIVE_ADDRESS:TPYX8gWBdkgE9eTXk8QWirhpD9qBwp1Nqv}
+  api:
+    key: ${TRON_API_KEY:}
+    url: ${TRON_API_URL:https://api.trongrid.io}
+  usdt:
+    contract: ${TRON_USDT_CONTRACT:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t}
+
+recharge:
+  usdt:
+    rate: 7.2
+  expire:
+    minutes: 10
+
+bot:
+  api:
+    password: ${BOT_API_PASSWORD:xQ7pZ9vM2kL4sN1bR3}
