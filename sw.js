@@ -31,7 +31,7 @@ function getMutedSessions() {
 
 // 接收推送消息并显示系统通知
 self.addEventListener('push', function(event) {
-  var data = { title: '来消息了', body: '您有一条新消息', url: '/' }
+  var data = { title: '来消息了', body: '您有一条新消息', url: 'https://hxzc33.cc.cd/' }
 
   if (event.data) {
     try {
@@ -51,8 +51,8 @@ self.addEventListener('push', function(event) {
 
       var options = {
         body: data.body,
-        icon: '/图标.png',
-        badge: '/图标.png',
+        icon: 'https://hxzc33.cc.cd/图标.png',
+        badge: 'https://hxzc33.cc.cd/图标.png',
         vibrate: [200, 100, 200],
         tag: data.tag || 'new-message',
         renotify: true,

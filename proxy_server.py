@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import os
 import sys
 import urllib.request
@@ -6,8 +7,11 @@ import urllib.error
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+PUBLIC_HOST = os.environ.get("PUBLIC_HOST", "hxzc33.cc.cd").strip() or "hxzc33.cc.cd"
+PUBLIC_SCHEME = os.environ.get("PUBLIC_SCHEME", "https").strip() or "https"
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", f"{PUBLIC_SCHEME}://{PUBLIC_HOST}").strip() or f"{PUBLIC_SCHEME}://{PUBLIC_HOST}"
 BACKEND = os.environ.get("BACKEND_URL", "").strip() or "http://127.0.0.1:8081"
-DEFAULT_ORIGIN = os.environ.get("DEFAULT_ORIGIN", "*")
+DEFAULT_ORIGIN = os.environ.get("DEFAULT_ORIGIN", PUBLIC_BASE_URL)
 
 
 class ProxyHandler(SimpleHTTPRequestHandler):
@@ -41,6 +45,9 @@ class ProxyHandler(SimpleHTTPRequestHandler):
         if self.path.startswith("/api/") or self.path.startswith("/ws/"):
             self._proxy_request()
             return
+        if self.path in ("/login", "/api/login", "/auth/login"):
+            self._handle_login()
+            return
         self.send_error(404, "Not Found")
 
     def do_PUT(self):
@@ -64,7 +71,7 @@ class ProxyHandler(SimpleHTTPRequestHandler):
     def _serve_static_or_index(self):
         request_path = self.path.split("?", 1)[0].split("#", 1)[0]
         if request_path in ("", "/", "/login", "/login.php", "/index", "/index.php"):
-            self.path = "/login.php"
+            self.path = "/index.html"
             self._serve_file(self.translate_path(self.path))
             return
         path = self.translate_path(request_path)
@@ -73,10 +80,40 @@ class ProxyHandler(SimpleHTTPRequestHandler):
             self._serve_file(self.translate_path(self.path))
             return
         if not os.path.exists(path):
-            self.path = "/login.php"
+            self.path = "/index.html"
             self._serve_file(self.translate_path(self.path))
             return
         self._serve_file(path)
+
+    def _handle_login(self):
+        length = int(self.headers.get("Content-Length", "0"))
+        body = self.rfile.read(length) if length > 0 else b""
+        payload = {"code": 1, "msg": "账号或密码错误"}
+        try:
+            data = json.loads(body.decode("utf-8")) if body else {}
+        except Exception:
+            data = {}
+        username = str(data.get("username") or data.get("account") or "").strip()
+        password = str(data.get("password") or "").strip()
+        if username == "hxzc33" and password == "123456":
+            payload = {
+                "code": 0,
+                "msg": "登录成功",
+                "token": "demo-token-hxzc33",
+                "user": {"username": "hxzc33", "role": "admin"},
+            }
+            status = 200
+        else:
+            status = 401
+        response_body = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(response_body)))
+        origin = self.headers.get("Origin", DEFAULT_ORIGIN)
+        self.send_header("Access-Control-Allow-Origin", origin)
+        self.send_header("Access-Control-Allow-Credentials", "true")
+        self.end_headers()
+        self.wfile.write(response_body)
 
     def _serve_file(self, file_path):
         if not os.path.exists(file_path):
@@ -113,6 +150,10 @@ class ProxyHandler(SimpleHTTPRequestHandler):
             if length > 0:
                 data = self.rfile.read(length)
 
+        headers["Host"] = PUBLIC_HOST
+        headers["X-Forwarded-Host"] = PUBLIC_HOST
+        headers["X-Forwarded-Proto"] = PUBLIC_SCHEME
+        headers["X-Forwarded-For"] = self.client_address[0]
         req = urllib.request.Request(target_url, data=data, method=self.command, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=20) as response:
@@ -149,7 +190,7 @@ class ProxyHandler(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
     server = ThreadingHTTPServer(("0.0.0.0", port), ProxyHandler)
-    print(f"Serving {ROOT} on http://0.0.0.0:{port} and proxying /api/* and /ws/* to {BACKEND}")
+    print(f"Serving {ROOT} on http://0.0.0.0:{port} and proxying /api/* and /ws/* to {BACKEND} (public {PUBLIC_BASE_URL})")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
